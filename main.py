@@ -3,6 +3,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 
+import util.network
+
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'any-secret-key-you-choose'
@@ -25,8 +27,23 @@ def home():
     return render_template("index.html")
 
 
-@app.route('/register')
+@app.route('/register', methods=["GET", "POST"])
 def register():
+    print(f"{request.method=}")
+    if request.method == "POST":
+        print(f"{request.form=}")
+        user = User(
+            name=request.form.get("name"),
+            email=request.form.get("email"),
+            password=request.form.get("password"),
+        )
+        print("INFO| add user:")
+        print(f"{user.name=}")
+        print(f"{user.email=}")
+        print(f"{user.password=}")
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for("secrets", name=user.name))
     return render_template("register.html")
 
 
@@ -37,7 +54,9 @@ def login():
 
 @app.route('/secrets')
 def secrets():
-    return render_template("secrets.html")
+    name = request.args.get("name")
+    print(f"{name=}")
+    return render_template("secrets.html", name=name)
 
 
 @app.route('/logout')
@@ -51,4 +70,4 @@ def download():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host=util.network.get_ipaddress())
