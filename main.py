@@ -64,10 +64,9 @@ def logout():
     pass
 
 
-@app.route('/download')
-def download():
-    pass
-
+@app.route('/download/<path:filename>')
+def download(filename):
+    return send_from_directory('static', filename=f"files/{filename}")
 
 if __name__ == "__main__":
     app.run(debug=True, host=util.network.get_ipaddress())
