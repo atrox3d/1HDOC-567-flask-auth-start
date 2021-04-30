@@ -32,10 +32,15 @@ def register():
     print(f"{request.method=}")
     if request.method == "POST":
         print(f"{request.form=}")
+        hashed_password = generate_password_hash(
+            request.form.get("password"),
+            method="pbkdf2:sha256",
+            salt_length=8
+        )
         user = User(
             name=request.form.get("name"),
             email=request.form.get("email"),
-            password=request.form.get("password"),
+            password=hashed_password,
         )
         print("INFO| add user:")
         print(f"{user.name=}")
