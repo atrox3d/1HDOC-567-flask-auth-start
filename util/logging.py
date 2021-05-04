@@ -65,8 +65,8 @@ def get_cli_logger(
     #    - GET LOCAL (NON-ROOT) LOGGER INSTANCE THAT OUTPUTS TO CLI
     #    - SET LEVEL TO DEBUG (DEFAULT IS WARNING)
     ############################################################################
-    _logger = logging.getLogger(name)   # get local logger
-    _logger.setLevel(level)             # set logger level >= logger_level
+    _logger = logging.getLogger(name)  # get local logger
+    _logger.setLevel(level)  # set logger level >= logger_level
     ############################################################################
     #    - GET SAME FORMATTER INSTANCE FOR ALL HANDLERS
     ############################################################################
@@ -91,9 +91,9 @@ def get_cli_logger(
             print(f"{output_stream} is not a {type(sys.stderr)}")
             output_stream = sys.stderr
 
-        cli_handler = logging.StreamHandler(stream=output_stream)   # get CLI handler (default=stderr)
-        cli_handler.setFormatter(formatter)                         # set formatter for CLI handler
-        _logger.addHandler(cli_handler)                             # add CLI handler to logger
+        cli_handler = logging.StreamHandler(stream=output_stream)  # get CLI handler (default=stderr)
+        cli_handler.setFormatter(formatter)  # set formatter for CLI handler
+        _logger.addHandler(cli_handler)  # add CLI handler to logger
 
     return _logger
 
@@ -147,34 +147,29 @@ def list_enabled_loggers():
 
 
 def log_formatdata(name, value):
+    ret = []
+    description = f"{name} <{type(value).__name__}>"
     if isinstance(value, tuple):
-        ret = []
-        ret.append(f"{name} <{type(value).__name__}>: (")
+        ret.append(f"{description}: (")
         for item in value:
             ret.append(f"    {item}")
         ret.append(")")
-        return ret
     if isinstance(value, list):
-        ret = []
-        ret.append(f"{name} <{type(value).__name__}>: [")
+        ret.append(f"{description}: [")
         for item in value:
             ret.append(f"    {item}")
         ret.append("]")
-        return ret
     elif isinstance(value, dict):
-        ret = []
-        ret.append(f"{name} <{type(value).__name__}>: {{")
+        ret.append(f"{description}: {{")
         for k, v in value.items():
             ret.append(f"    {k}: {v}")
         ret.append("}")
-        return ret
     elif isinstance(value, str):
-        ret = []
-        ret.append(f"{name} <{type(value).__name__}>:")
+        ret.append(f"{description}:")
         ret.extend(value.split('\n'))
-        return ret
     else:
-        return [f"{name} <{type(value).__name__}>: {value}"]
+        ret = [f"{description}: {value}"]
+    return ret
 
 
 def log_decorator(multiple_lines=True):
@@ -189,7 +184,9 @@ def log_decorator(multiple_lines=True):
                 if not multiple_lines:
                     break
             return retval
+
         return wrapper
+
     return make_decorator
 
 
