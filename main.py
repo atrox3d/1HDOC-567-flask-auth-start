@@ -19,11 +19,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-def dump_config():
-    for k, v in sorted(app.config.items()):
-        align = ">"
-        width = 30
-        logger.info(f"{k:{align}{width}} : {v}")
+# def dump_config():
+#     for k, v in sorted(app.config.items()):
+#         align = ">"
+#         width = 30
+#         logger.info(f"{k:{align}{width}} : {v}")
 
 
 ##CREATE TABLE IN DB
@@ -41,16 +41,28 @@ db.drop_all()
 logger.info("creating tables")
 db.create_all()
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+
+@login_manager.user_loader
+@util.logging.log_decorator()
+def load_user(user_id):
+    logger.info(f"query user with {user_id=}")
+    user = User.query.get(user_id)
+    logger.info(f"{user=}")
+    return user
+
 
 @app.route('/')
-@util.logging.log_decorator(multiple_lines=True)
+@util.logging.log_decorator()
 def home():
     logger.info("rendering index.html")
     return render_template("index.html")
 
 
 @app.route('/register', methods=["GET", "POST"])
-@util.logging.log_decorator(multiple_lines=True)
+@util.logging.log_decorator()
 def register():
     logger.info(f"{request.method=}")
     if request.method == "POST":
@@ -65,41 +77,80 @@ def register():
             email=request.form.get("email"),
             password=hashed_password,
         )
-        logger.info("INFO| add user:")
+        logger.info("add user:")
         logger.info(f"{user.name=}")
         logger.info(f"{user.email=}")
         logger.info(f"{user.password=}")
         db.session.add(user)
         db.session.commit()
-        return redirect(url_for("secrets", name=user.name))
+
+        logger.info(f"logging in {user=}")
+        login_user(user)
+
+        url = url_for("secrets")
+        logger.info(f"redirect to {url=}")
+        return redirect(url)
     else:
+        logger.info(f"render register.html")
         return render_template("register.html")
 
 
-@app.route('/login')
-@util.logging.log_decorator(multiple_lines=True)
+@app.route('/login', methods=['GET', 'POST'])
+@util.logging.log_decorator()
 def login():
-    return render_template("login.html")
+    logger.info(f"{request.method=}")
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        logger.info("authenticate user:")
+        logger.info(f"{email=}")
+        logger.info(f"{password=}")
+
+        user = User.query.filter_by(email=email).first()
+        logger.info(f"found {user=}")
+
+        logger.info(f"checking {password=}")
+        if check_password_hash(user.password, password):
+            logger.info(f"SUCCESS| logging in")
+            login_user(user)
+
+            url = url_for("secrets")
+            logger.info(f"redirect to {url=}")
+            return redirect(url)
+    else:
+        logger.info(f"render login.html")
+        return render_template("login.html")
 
 
 @app.route('/secrets')
-@util.logging.log_decorator(multiple_lines=True)
+@login_required
+@util.logging.log_decorator()
 def secrets():
-    name = request.args.get("name")
-    print(f"{name=}")
-    return render_template("secrets.html", name=name)
+    # name = request.args.get("name")
+    logger.info(f"{current_user.name=}")
+    logger.info(f"render secrest.html with name={current_user.name}")
+    return render_template("secrets.html", name=current_user.name)
 
 
 @app.route('/download/<path:filename>')
-@util.logging.log_decorator(multiple_lines=True)
+@login_required
+@util.logging.log_decorator()
 def download(filename):
+    logger.info(f"send_from_directory 'static' filename=files/{filename}")
     return send_from_directory('static', filename=f"files/{filename}")
 
 
 @app.route('/logout')
-@util.logging.log_decorator(multiple_lines=True)
+@login_required
+@util.logging.log_decorator()
 def logout():
-    pass
+    logger.info("logout_user")
+    logout_user()
+
+    url = url_for('home')
+    logger.info(f"redirect to {url=}")
+    return redirect(url)
 
 
 if __name__ == "__main__":

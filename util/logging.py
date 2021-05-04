@@ -172,7 +172,7 @@ def log_formatdata(name, value):
     return ret
 
 
-def log_decorator(multiple_lines=True):
+def log_decorator(multiple_lines=False):
     def make_decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
