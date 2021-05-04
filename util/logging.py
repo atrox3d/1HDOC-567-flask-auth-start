@@ -168,21 +168,29 @@ def log_formatdata(name, value):
             ret.append(f"    {k}: {v}")
         ret.append("}")
         return ret
+    elif isinstance(value, str):
+        ret = []
+        ret.append(f"{name} <{type(value).__name__}>:")
+        ret.extend(value.split('\n'))
+        return ret
     else:
         return [f"{name} <{type(value).__name__}>: {value}"]
 
 
-def log_decorator(fn):
-    @functools.wraps(fn)
-    def wrapper(*args, **kwargs):
-        logger.info(f"calling {fn.__name__}({util.params.params2str(*args, **kwargs)})")
-        retval = fn(*args, **kwargs)
-        # logger.info(f"return value:")
-        for line in log_formatdata("return value", retval):
-            logger.info(line)
-        return retval
-
-    return wrapper
+def log_decorator(multiple_lines=True):
+    def make_decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            logger.info(f"calling {fn.__name__}({util.params.params2str(*args, **kwargs)})")
+            retval = fn(*args, **kwargs)
+            # logger.info(f"return value:")
+            for line in log_formatdata("return value", retval):
+                logger.info(line)
+                if not multiple_lines:
+                    break
+            return retval
+        return wrapper
+    return make_decorator
 
 
 if __name__ == "__main__":

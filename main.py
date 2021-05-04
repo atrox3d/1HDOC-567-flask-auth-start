@@ -13,10 +13,17 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-app.config['SECRET_KEY'] = 'any-secret-key-you-choose'
+app.config['SECRET_KEY'] = 'secret-key-yup!'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+
+def dump_config():
+    for k, v in sorted(app.config.items()):
+        align = ">"
+        width = 30
+        logger.info(f"{k:{align}{width}} : {v}")
 
 
 ##CREATE TABLE IN DB
@@ -36,13 +43,14 @@ db.create_all()
 
 
 @app.route('/')
-@util.logging.log_decorator
+@util.logging.log_decorator(multiple_lines=True)
 def home():
+    logger.info("rendering index.html")
     return render_template("index.html")
 
 
 @app.route('/register', methods=["GET", "POST"])
-@util.logging.log_decorator
+@util.logging.log_decorator(multiple_lines=True)
 def register():
     logger.info(f"{request.method=}")
     if request.method == "POST":
@@ -64,17 +72,18 @@ def register():
         db.session.add(user)
         db.session.commit()
         return redirect(url_for("secrets", name=user.name))
-    return render_template("register.html")
+    else:
+        return render_template("register.html")
 
 
 @app.route('/login')
-@util.logging.log_decorator
+@util.logging.log_decorator(multiple_lines=True)
 def login():
     return render_template("login.html")
 
 
 @app.route('/secrets')
-@util.logging.log_decorator
+@util.logging.log_decorator(multiple_lines=True)
 def secrets():
     name = request.args.get("name")
     print(f"{name=}")
@@ -82,12 +91,13 @@ def secrets():
 
 
 @app.route('/download/<path:filename>')
-@util.logging.log_decorator
+@util.logging.log_decorator(multiple_lines=True)
 def download(filename):
     return send_from_directory('static', filename=f"files/{filename}")
 
 
 @app.route('/logout')
+@util.logging.log_decorator(multiple_lines=True)
 def logout():
     pass
 
