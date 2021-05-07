@@ -1,9 +1,30 @@
 import logging
 
-from flask import Flask, render_template, request, url_for, redirect, flash, send_from_directory
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import (
+    Flask,
+    render_template,
+    request,
+    url_for,
+    redirect,
+    flash,
+    send_from_directory
+)
+
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
+
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+
+from flask_login import (
+    UserMixin,
+    login_user,
+    LoginManager,
+    login_required,
+    current_user,
+    logout_user
+)
 
 import util.network
 import util.logging
@@ -67,16 +88,19 @@ def register():
     logger.info(f"{request.method=}")
     if request.method == "POST":
         logger.info(f"{request.form=}")
+
         hashed_password = generate_password_hash(
             request.form.get("password"),
             method="pbkdf2:sha256",
             salt_length=8
         )
+
         user = User(
             name=request.form.get("name"),
             email=request.form.get("email"),
             password=hashed_password,
         )
+
         logger.info("add user:")
         logger.info(f"{user.name=}")
         logger.info(f"{user.email=}")
