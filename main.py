@@ -1,3 +1,5 @@
+# https://www.udemy.com/course/100-days-of-code/learn/lecture/22827443#questions
+
 import logging
 
 from flask import (
@@ -32,20 +34,14 @@ import util.logging
 util.logging.get_root_logger()
 logger = logging.getLogger(__name__)
 
+# create flask app
 app = Flask(__name__)
-
 app.config['SECRET_KEY'] = 'secret-key-yup!'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# init db
 db = SQLAlchemy(app)
-
-
-# def dump_config():
-#     for k, v in sorted(app.config.items()):
-#         align = ">"
-#         width = 30
-#         logger.info(f"{k:{align}{width}} : {v}")
-
 
 ##CREATE TABLE IN DB
 class User(UserMixin, db.Model):
@@ -55,17 +51,20 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(1000))
     # plainpassword = db.Column(db.String(100))
 
-
-# Line below only required once, when creating DB.
+# reset db at every run
 logger.warning("DELETING tables")
 db.drop_all()
+# Line below only required once, when creating DB.
 logger.info("creating tables")
 db.create_all()
 
+# init login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-
+#
+#   called by flask before every route
+#
 @login_manager.user_loader
 @util.logging.log_decorator()
 def load_user(user_id):
@@ -87,14 +86,21 @@ def home():
 def register():
     logger.info(f"{request.method=}")
     if request.method == "POST":
+        #
+        #   POST: get values from register form
+        #
         logger.info(f"{request.form=}")
-
+        #
+        #   create hashed password
+        #
         hashed_password = generate_password_hash(
             request.form.get("password"),
             method="pbkdf2:sha256",
             salt_length=8
         )
-
+        #
+        #   create new user
+        #
         user = User(
             name=request.form.get("name"),
             email=request.form.get("email"),
@@ -105,18 +111,27 @@ def register():
         logger.info(f"{user.name=}")
         logger.info(f"{user.email=}")
         logger.info(f"{user.password=}")
+        #
+        #   add new user to db
+        #
         db.session.add(user)
         db.session.commit()
-
+        #
+        #   if succesful authenticates user
+        #
         logger.info(f"logging in {user=}")
         login_user(user)
-
+        #
+        #   redirect to privare area
+        #
         url = url_for("secrets")
         logger.info(f"redirect to {url=}")
         return redirect(url)
-    else:
-        logger.info(f"render register.html")
-        return render_template("register.html")
+    #
+    #   GET or register fail: render register form
+    #
+    logger.info(f"render register.html")
+    return render_template("register.html")
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -124,25 +139,39 @@ def register():
 def login():
     logger.info(f"{request.method=}")
     if request.method == 'POST':
+        #
+        #   POST: get values from login form
+        #
         email = request.form.get('email')
         password = request.form.get('password')
 
         logger.info("authenticate user:")
         logger.info(f"{email=}")
         logger.info(f"{password=}")
-
+        #
+        #   try to load user from db
+        #
         user = User.query.filter_by(email=email).first()
         logger.info(f"found {user=}")
-
+        #
+        #   check password against hashed password
+        #
         logger.info(f"checking {password=}")
         if check_password_hash(user.password, password):
+            #
+            #   if succesful authenticates user
+            #
             logger.info(f"SUCCESS| logging in")
             login_user(user)
-
+            #
+            #   redirect to privare area
+            #
             url = url_for("secrets")
             logger.info(f"redirect to {url=}")
             return redirect(url)
-    else:
+        #
+        #   GET or login fail: render login form
+        #
         logger.info(f"render login.html")
         return render_template("login.html")
 
@@ -151,7 +180,9 @@ def login():
 @login_required
 @util.logging.log_decorator()
 def secrets():
-    # name = request.args.get("name")
+    #
+    #   current_user is a flask global object just like request
+    #
     logger.info(f"{current_user.name=}")
     logger.info(f"render secrest.html with name={current_user.name}")
     return render_template("secrets.html", name=current_user.name)
@@ -169,6 +200,9 @@ def download(filename):
 @login_required
 @util.logging.log_decorator()
 def logout():
+    """
+    logs out user and redirects to home
+    """
     logger.info("logout_user")
     logout_user()
 
