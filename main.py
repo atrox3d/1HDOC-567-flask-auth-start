@@ -175,6 +175,10 @@ def login():
         #
         user = User.query.filter_by(email=email).first()
         logger.info(f"found {user=}")
+        if not user:
+            flash(f"email {email} not found, please register")
+            url = url_for('register')
+            return redirect(url)
         #
         #   check password against hashed password
         #
@@ -191,11 +195,12 @@ def login():
             url = url_for("secrets")
             logger.info(f"redirect to {url=}")
             return redirect(url)
-        #
-        #   GET or login fail: render login form
-        #
-        logger.info(f"render login.html")
-        return render_template("login.html")
+        flash("wrong password, try again")
+    #
+    #   GET or login fail: render login form
+    #
+    logger.info(f"render login.html")
+    return render_template("login.html")
 
 
 @app.route('/secrets')
