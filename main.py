@@ -2,6 +2,7 @@
 
 import logging
 
+import flask_sqlalchemy
 from flask import (
     Flask,
     render_template,
@@ -17,7 +18,15 @@ from werkzeug.security import (
     check_password_hash
 )
 
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import (
+    SQLAlchemy,
+    # sqlalchemy
+)
+
+from sqlalchemy.exc import (
+    IntegrityError,
+    SQLAlchemyError
+)
 
 from flask_login import (
     UserMixin,
@@ -43,6 +52,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # init db
 db = SQLAlchemy(app)
 
+
 ##CREATE TABLE IN DB
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -50,6 +60,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(100))
     name = db.Column(db.String(1000))
     # plainpassword = db.Column(db.String(100))
+
 
 # reset db at every run
 logger.warning("DELETING tables")
@@ -61,6 +72,7 @@ db.create_all()
 # init login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
+
 
 #
 #   called by flask before every route
@@ -114,19 +126,29 @@ def register():
         #
         #   add new user to db
         #
-        db.session.add(user)
-        db.session.commit()
-        #
-        #   if succesful authenticates user
-        #
-        logger.info(f"logging in {user=}")
-        login_user(user)
-        #
-        #   redirect to privare area
-        #
-        url = url_for("secrets")
-        logger.info(f"redirect to {url=}")
-        return redirect(url)
+        try:
+            db.session.add(user)
+            db.session.commit()
+            #
+            #   if succesful authenticates user
+            #
+            logger.info(f"logging in {user=}")
+            login_user(user)
+            #
+            #   redirect to privare area
+            #
+            url = url_for("secrets")
+            logger.info(f"redirect to {url=}")
+            return redirect(url)
+        except IntegrityError as e:
+            logger.critical(e)
+            logger.critical(repr(e))
+            flash(f"email {user.email} already registered")
+        except SQLAlchemyError as e:
+            logger.critical(e)
+            logger.critical(repr(e))
+            flash(f"Critical Database Error, please try again later")
+
     #
     #   GET or register fail: render register form
     #
