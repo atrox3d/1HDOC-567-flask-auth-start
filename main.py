@@ -90,7 +90,7 @@ def load_user(user_id):
 @util.logging.log_decorator()
 def home():
     logger.info("rendering index.html")
-    return render_template("index.html")
+    return render_template("index.html", loggedin=current_user.is_authenticated)
 
 
 @app.route('/register', methods=["GET", "POST"])
@@ -105,6 +105,7 @@ def register():
         #
         #   create hashed password
         #
+        plaintext_password = request.form.get("password")
         hashed_password = generate_password_hash(
             request.form.get("password"),
             method="pbkdf2:sha256",
@@ -122,6 +123,7 @@ def register():
         logger.info("add user:")
         logger.info(f"{user.name=}")
         logger.info(f"{user.email=}")
+        logger.info(f"{plaintext_password=}")
         logger.info(f"{user.password=}")
         #
         #   add new user to db
@@ -137,7 +139,7 @@ def register():
             #
             #   redirect to privare area
             #
-            url = url_for("secrets")
+            url = url_for("secrets", loggedin=current_user.is_authenticated)
             logger.info(f"redirect to {url=}")
             return redirect(url)
         except IntegrityError as e:
@@ -153,7 +155,7 @@ def register():
     #   GET or register fail: render register form
     #
     logger.info(f"render register.html")
-    return render_template("register.html")
+    return render_template("register.html", loggedin=current_user.is_authenticated)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -177,7 +179,7 @@ def login():
         logger.info(f"found {user=}")
         if not user:
             flash(f"email {email} not found, please register")
-            url = url_for('register')
+            url = url_for('register', loggedin=current_user.is_authenticated)
             return redirect(url)
         #
         #   check password against hashed password
@@ -192,7 +194,8 @@ def login():
             #
             #   redirect to privare area
             #
-            url = url_for("secrets")
+            flash("login completed succesfully!")
+            url = url_for("secrets", loggedin=current_user.is_authenticated)
             logger.info(f"redirect to {url=}")
             return redirect(url)
         flash("wrong password, try again")
@@ -200,7 +203,7 @@ def login():
     #   GET or login fail: render login form
     #
     logger.info(f"render login.html")
-    return render_template("login.html")
+    return render_template("login.html", loggedin=current_user.is_authenticated)
 
 
 @app.route('/secrets')
@@ -212,7 +215,7 @@ def secrets():
     #
     logger.info(f"{current_user.name=}")
     logger.info(f"render secrest.html with name={current_user.name}")
-    return render_template("secrets.html", name=current_user.name)
+    return render_template("secrets.html", name=current_user.name, loggedin=current_user.is_authenticated)
 
 
 @app.route('/download/<path:filename>')
@@ -224,7 +227,7 @@ def download(filename):
 
 
 @app.route('/logout')
-@login_required
+# @login_required
 @util.logging.log_decorator()
 def logout():
     """
@@ -233,7 +236,7 @@ def logout():
     logger.info("logout_user")
     logout_user()
 
-    url = url_for('home')
+    url = url_for('home', loggedin=current_user.is_authenticated)
     logger.info(f"redirect to {url=}")
     return redirect(url)
 
