@@ -2,3 +2,4 @@
 /.idea/
 users.db
 
+__pycache__
